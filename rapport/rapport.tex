@@ -1,0 +1,354 @@
+\documentclass[12pt,a4paper]{article}
+
+% ---------- Packages ----------
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[french]{babel}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{setspace}
+\usepackage{url}
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue,citecolor=black]{hyperref}
+
+\setstretch{1.15}
+\setlength{\parskip}{0.4em}
+\setlist{itemsep=0.2em}
+
+% ---------- Page de titre ----------
+\title{\textbf{Étude des facteurs de risque\\d'un portefeuille d'actions}}
+\author{Fatima-ezzahra Naciri\\[0.5em]
+        Filière : S7 FIN / S7 CI \\
+        Groupe : Fin3}
+\date{17 novembre 2026}
+
+\begin{document}
+
+\maketitle
+\thispagestyle{empty}
+\newpage
+
+\tableofcontents
+\newpage
+
+% =====================================================
+\section{Sujet et problématique}
+
+L'analyse de la rentabilité d'un portefeuille boursier est essentielle pour comprendre les différentes sources de performance et évaluer les risques auxquels il est exposé. Une rentabilité élevée ne signifie pas nécessairement que le portefeuille possède une performance exceptionnelle, car elle peut simplement résulter de son exposition aux fluctuations du marché.
+
+Dans ce travail, nous étudions un portefeuille composé de dix grandes entreprises américaines appartenant à différents secteurs économiques. L'objectif est d'identifier l'influence des facteurs de marché, de taille et de valeur sur ses rendements.
+
+La problématique retenue est la suivante : \textbf{la rentabilité mensuelle en excès de ce portefeuille peut-elle être expliquée par les trois facteurs de Fama et French, ou existe-t-il une performance anormale (alpha) statistiquement significative ?}
+
+Pour répondre à cette question, nous utilisons une régression linéaire multiple et comparons le modèle Fama-French à trois facteurs avec le CAPM et un modèle de référence sans facteur. L'évaluation repose principalement sur le $R^2$ ajusté, le RMSE hors échantillon et la significativité de l'alpha.
+
+% =====================================================
+\section{Jeu de données}
+
+\subsection{Sources des données}
+
+L'étude repose sur deux sources principales :
+\begin{itemize}
+    \item \textbf{Kenneth R. French Data Library} : fournit les facteurs mensuels Fama-French, notamment Mkt-RF, SMB, HML et RF.
+    \item \textbf{Yahoo Finance} : fournit les cours de clôture ajustés des dix entreprises sélectionnées.
+\end{itemize}
+
+Les données sont récupérées avec la bibliothèque Python \texttt{yfinance}. Les cours ajustés tiennent compte des dividendes et des divisions d'actions. Les données utilisées couvrent la période allant de décembre 2014 à décembre 2025 pour les cours, afin de calculer les rendements de janvier 2015 à décembre 2025.
+
+Les données Fama-French sont accessibles publiquement pour un usage académique, sous réserve des conditions indiquées par leur fournisseur. Les données Yahoo Finance restent soumises aux conditions d'utilisation de cette plateforme.
+
+\subsection{Composition du portefeuille}
+
+Le portefeuille contient dix entreprises américaines réparties dans six secteurs :
+\begin{itemize}
+    \item \textbf{Énergie} : Exxon Mobil (XOM) et Chevron (CVX).
+    \item \textbf{Finance} : JPMorgan Chase (JPM).
+    \item \textbf{Santé} : Johnson \& Johnson (JNJ) et Pfizer (PFE).
+    \item \textbf{Consommation de base} : Procter \& Gamble (PG), Walmart (WMT) et Coca-Cola (KO).
+    \item \textbf{Industrie} : General Electric (GE).
+    \item \textbf{Télécommunications} : AT\&T (T).
+\end{itemize}
+
+Chaque titre reçoit une pondération égale de 10~\%, avec un rééquilibrage mensuel.
+
+\subsection{Taille et description des données}
+
+Après le calcul des rendements et la fusion des deux sources, l'échantillon final contient 132 observations mensuelles, de janvier 2015 à décembre 2025, et 17 colonnes. Une observation correspond à un mois calendaire.
+
+Les principales variables utilisées sont :
+
+\begin{table}[H]
+\centering
+\begin{tabular}{@{}lp{9.5cm}@{}}
+\toprule
+\textbf{Variable} & \textbf{Description} \\
+\midrule
+Date & Date mensuelle au format AAAAMM \\
+Portefeuille & Rendement mensuel du portefeuille \\
+RF & Taux sans risque \\
+Mkt-RF & Prime de risque du marché \\
+SMB & Différence entre petites et grandes capitalisations \\
+HML & Différence entre titres valeur et titres croissance \\
+Rp\_exc & Rendement du portefeuille diminué du taux sans risque \\
+\bottomrule
+\end{tabular}
+\caption{Principales variables utilisées}
+\end{table}
+
+La variable cible est \texttt{Rp\_exc}, calculée comme suit :
+\[
+R_{p,\mathrm{exc}} = R_{\mathrm{Portefeuille}} - R_F
+\]
+Cette variable est numérique et continue, ce qui correspond à un problème de régression.
+
+\subsection{Adéquation et limites des données}
+
+Les données sont adaptées à notre problématique, car elles permettent d'étudier simultanément le rendement du portefeuille et les principaux facteurs de risque.
+
+Cependant, certaines limites doivent être prises en considération. Le portefeuille ne contient que dix entreprises et présente un biais de survie, car les sociétés sélectionnées existent encore aujourd'hui. Les coûts de transaction liés au rééquilibrage mensuel ne sont pas pris en compte. Enfin, certaines opérations sur titres, notamment les scissions d'activités de General Electric et AT\&T, peuvent affecter la comparabilité historique des cours.
+
+% =====================================================
+\section{Exploration des données}
+
+L'exploration permet de mieux comprendre la structure des données, leur qualité et les relations entre les variables.
+
+\subsection{Statistiques descriptives}
+
+L'échantillon contient 132 observations. Les données de rendement sont numériques et aucune valeur manquante n'est observée dans les rendements utilisés pour l'étude.
+
+Le rendement moyen mensuel du portefeuille est de 0,96~\%, avec un écart-type de 4,05~\%. Cette dispersion est relativement inférieure à celle de plusieurs titres pris individuellement, ce qui met en évidence l'intérêt de la diversification.
+
+Les rendements extrêmes du portefeuille se situent entre $-13{,}34$~\% et $+15{,}79$~\%.
+
+\subsection{Qualité des données}
+
+La vérification des données repose sur trois éléments :
+\begin{itemize}
+    \item la recherche des valeurs manquantes avec \texttt{isna()} ;
+    \item la détection des doublons à partir des dates ;
+    \item l'identification des valeurs atypiques avec la méthode de l'écart interquartile.
+\end{itemize}
+
+Aucun doublon de date n'a été détecté. Les observations extrêmes ont été conservées, car elles peuvent correspondre à de véritables événements financiers, notamment les crises et les fortes variations du marché.
+
+\subsection{Interprétation des graphiques}
+
+\paragraph{Graphique 1 : évolution des rendements cumulés.}
+Le graphique compare la performance cumulée du portefeuille à celle du marché. Sur la période étudiée, le portefeuille réalise environ $+217$~\%, contre $+295$~\% pour le marché. Le portefeuille présente une évolution relativement régulière, mais sa performance cumulée reste inférieure à celle du marché.
+
+% Décommentez et adaptez le chemin de l'image :
+% \begin{figure}[H]
+%     \centering
+%     \includegraphics[width=0.85\textwidth]{graphique1.png}
+%     \caption{Rendements cumulés du portefeuille et du marché}
+% \end{figure}
+
+\paragraph{Graphique 2 : distribution des rendements mensuels en excès.}
+L'histogramme permet d'observer la répartition des rendements autour de zéro. La distribution présente une dispersion importante et certaines observations extrêmes. Cela montre que les rendements financiers peuvent connaître des variations importantes d'un mois à l'autre.
+
+% \begin{figure}[H]
+%     \centering
+%     \includegraphics[width=0.85\textwidth]{graphique2.png}
+%     \caption{Distribution des rendements mensuels en excès}
+% \end{figure}
+
+\paragraph{Graphique 3 : relation entre le rendement du portefeuille et le marché.}
+Le nuage de points présente une relation positive entre le rendement en excès du portefeuille et la prime de risque du marché. La corrélation est de 0,78 et le bêta du CAPM est de 0,70. Cette relation confirme l'intérêt d'utiliser une régression linéaire pour analyser la sensibilité du portefeuille au marché.
+
+% \begin{figure}[H]
+%     \centering
+%     \includegraphics[width=0.85\textwidth]{graphique3.png}
+%     \caption{Rendement en excès du portefeuille en fonction de Mkt-RF}
+% \end{figure}
+
+\paragraph{Graphique complémentaire : boîtes à moustaches et matrice de corrélation.}
+Les corrélations entre les trois facteurs restent relativement faibles, avec une corrélation maximale d'environ 0,31 entre Mkt-RF et SMB. Cette situation ne révèle pas de multicolinéarité importante entre les facteurs explicatifs.
+
+% =====================================================
+\section{Préparation des données}
+
+La préparation consiste d'abord à harmoniser les dates des rendements du portefeuille et des facteurs Fama-French, puis à effectuer une fusion sur la variable \texttt{Date}.
+
+Le rendement excédentaire du portefeuille est ensuite calculé en soustrayant le taux sans risque au rendement du portefeuille :
+\[
+R_{p,\mathrm{exc}} = R_{\mathrm{Portefeuille}} - R_F
+\]
+
+Les observations incomplètes sont supprimées si nécessaire. Après cette opération, les données finales comprennent 132 mois.
+
+Aucun encodage ni standardisation n'est nécessaire, puisque les variables explicatives sont déjà numériques et exprimées en pourcentage.
+
+Enfin, les données sont divisées chronologiquement en deux ensembles : 99 observations pour l'apprentissage et 33 observations pour le test. Cette méthode permet de conserver l'ordre temporel et d'éviter le mélange des observations futures avec les observations passées.
+
+% =====================================================
+\section{Algorithme}
+
+L'algorithme choisi est la régression linéaire multiple, estimée par la méthode des moindres carrés ordinaires (MCO). Cette méthode permet d'expliquer le rendement excédentaire du portefeuille à partir de trois facteurs :
+\begin{itemize}
+    \item \textbf{Mkt-RF} : facteur de marché ;
+    \item \textbf{SMB} : facteur de taille ;
+    \item \textbf{HML} : facteur de valeur.
+\end{itemize}
+
+L'équation utilisée est :
+\[
+R_{p,\mathrm{exc}} = \alpha + \beta_1\,(\text{Mkt-RF}) + \beta_2\,(\text{SMB}) + \beta_3\,(\text{HML}) + \varepsilon
+\]
+
+Dans cette équation, $\alpha$ représente l'alpha du portefeuille, les coefficients $\beta$ mesurent sa sensibilité aux différents facteurs et $\varepsilon$ représente la partie du rendement qui n'est pas expliquée par le modèle.
+
+La régression linéaire a été choisie parce qu'elle permet d'interpréter directement les coefficients et de réaliser des tests statistiques sur leur significativité.
+
+Trois spécifications sont étudiées : un modèle de référence sans facteur, le CAPM à un facteur et le modèle Fama-French à trois facteurs.
+
+Des erreurs-types robustes de Newey-West avec trois retards sont également utilisées pour tenir compte d'une éventuelle hétéroscédasticité et autocorrélation des résidus.
+
+% =====================================================
+\section{Protocole expérimental}
+
+L'expérimentation repose sur les 132 observations mensuelles disponibles. Le découpage chronologique est effectué avec 75~\% des données pour l'apprentissage, soit 99 mois, et 25~\% pour le test, soit 33 mois.
+
+Trois modèles sont comparés :
+\begin{enumerate}
+    \item le modèle de référence, qui utilise uniquement la moyenne du rendement ;
+    \item le CAPM, qui prend en compte uniquement le facteur de marché ;
+    \item le modèle Fama-French, qui utilise les facteurs de marché, de taille et de valeur.
+\end{enumerate}
+
+Les indicateurs retenus sont le $R^2$ ajusté, le RMSE et l'AIC pour comparer les modèles, ainsi que le test $F$ pour mesurer l'apport des facteurs SMB et HML.
+
+Les intervalles de confiance à 95~\%, les $p$-values, les erreurs robustes de Newey-West et le bootstrap de l'alpha permettent de compléter l'analyse statistique.
+
+Aucun hyperparamètre n'est optimisé, car les spécifications des trois modèles sont déterminées à partir de la théorie financière.
+
+% =====================================================
+\section{Résultats}
+
+\subsection{Comparaison des modèles}
+
+Les estimations montrent que le modèle Fama-French à trois facteurs possède une meilleure qualité d'ajustement que le CAPM et le modèle de référence.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{@{}lcc@{}}
+\toprule
+\textbf{Modèle} & \textbf{$R^2$ ajusté} & \textbf{RMSE sur le test} \\
+\midrule
+Référence & 0,000 & 2,99~\% \\
+CAPM & 0,606 & 2,63~\% \\
+Fama-French à trois facteurs & 0,788 & 1,92~\% \\
+\bottomrule
+\end{tabular}
+\caption{Comparaison des trois modèles}
+\end{table}
+
+Le modèle à trois facteurs explique environ 79~\% de la variation des rendements en excès sur l'échantillon complet. Son RMSE hors échantillon est également inférieur à celui des deux autres modèles.
+
+\subsection{Significativité des facteurs}
+
+Le test $F$ de modèles emboîtés donne une statistique de 56,91 avec une $p$-value inférieure à 0,0001. Ce résultat montre que l'ajout des facteurs SMB et HML améliore significativement le CAPM. Les facteurs de taille et de valeur apportent donc une information complémentaire au facteur de marché.
+
+\subsection{Interprétation des coefficients}
+
+Les coefficients estimés sur les 132 observations sont les suivants :
+
+\begin{table}[H]
+\centering
+\begin{tabular}{@{}lc@{}}
+\toprule
+\textbf{Coefficient} & \textbf{Valeur} \\
+\midrule
+Bêta de marché ($\beta_1$) & $0{,}753$ \\
+Bêta SMB ($\beta_2$) & $-0{,}265$ \\
+Bêta HML ($\beta_3$) & $0{,}446$ \\
+Alpha ($\alpha$) & $0{,}057$~\% par mois \\
+\bottomrule
+\end{tabular}
+\caption{Coefficients estimés du modèle Fama-French}
+\end{table}
+
+Le bêta de marché inférieur à 1 indique que le portefeuille est moins sensible aux variations du marché. Le coefficient SMB négatif indique une exposition davantage orientée vers les grandes capitalisations. Le coefficient HML positif traduit une orientation vers les titres de valeur.
+
+L'alpha est positif, mais il n'est pas statistiquement significatif. Son intervalle de confiance à 95~\% est compris entre $-0{,}274$~\% et $0{,}389$~\% par mois, et contient zéro.
+
+\subsection{Analyse des erreurs et robustesse}
+
+Les diagnostics des résidus montrent que leur variance ne présente pas d'hétéroscédasticité significative selon le test de Breusch-Pagan ($p = 0{,}089$). En revanche, le test de Jarque-Bera rejette l'hypothèse de normalité à 5~\% ($p = 0{,}019$). Le Durbin-Watson de 1,74 suggère également une légère autocorrélation positive.
+
+L'utilisation des erreurs robustes de Newey-West ne modifie pas les principales conclusions statistiques.
+
+Enfin, le bootstrap réalisé avec 2\,000 tirages donne un intervalle de confiance de l'alpha compris entre $-0{,}269$~\% et $0{,}371$~\%, très proche de l'intervalle théorique. Cela confirme que les données ne permettent pas d'établir une surperformance anormale significative.
+
+\subsection{Stabilité des coefficients}
+
+L'analyse sur une fenêtre glissante de 36 mois montre que le bêta de marché reste relativement stable, entre 0,55 et 0,83. En revanche, les coefficients SMB et HML évoluent davantage à partir de 2023. L'alpha varie également autour de zéro.
+
+Ces observations indiquent que les sensibilités du portefeuille aux facteurs peuvent changer selon les périodes économiques.
+
+\subsection{Exemple d'application}
+
+Pour une observation fictive où Mkt-RF vaut 2~\%, SMB vaut 0,5~\% et HML vaut $-1$~\%, le modèle estime un rendement mensuel en excès de 0,98~\%.
+
+L'intervalle de prédiction à 95~\% est compris entre $-2{,}72$~\% et $4{,}69$~\%. Cette amplitude montre que, malgré la capacité explicative du modèle, le rendement réellement obtenu reste incertain.
+
+% =====================================================
+\section{Analyse critique}
+
+Les résultats obtenus montrent que les trois facteurs de Fama-French expliquent une grande partie de la rentabilité du portefeuille. Toutefois, plusieurs limites doivent être prises en compte.
+
+Premièrement, le portefeuille contient seulement dix titres, ce qui limite la représentativité des résultats. Deuxièmement, le biais de survie peut conduire à surestimer la performance historique, puisque les entreprises disparues ou en difficulté ne sont pas représentées.
+
+De plus, les coûts de transaction liés au rééquilibrage mensuel ne sont pas intégrés dans les calculs. Les coefficients ne sont pas parfaitement stables dans le temps, ce qui montre que les relations entre les facteurs et le portefeuille peuvent évoluer selon les conditions économiques.
+
+Enfin, le modèle utilise uniquement trois facteurs et ne prend pas en compte d'autres dimensions possibles du risque, comme le momentum ou la rentabilité des entreprises.
+
+Pour améliorer cette étude, il serait intéressant d'élargir le portefeuille à davantage d'entreprises, d'intégrer les coûts de transaction, d'utiliser des facteurs supplémentaires et de comparer les résultats sur plusieurs périodes.
+
+% =====================================================
+\section{Conclusion}
+
+Cette étude avait pour objectif d'identifier les facteurs qui expliquent la rentabilité mensuelle en excès d'un portefeuille de dix grandes entreprises américaines.
+
+Les résultats montrent que le modèle Fama-French à trois facteurs est plus performant que le CAPM, avec un $R^2$ ajusté de 0,788 contre 0,606 et un RMSE hors échantillon de 1,92~\% contre 2,63~\%. Le test $F$ confirme également l'apport significatif des facteurs de taille et de valeur.
+
+Cependant, l'alpha estimé à 0,057~\% par mois n'est pas statistiquement significatif. Nous concluons donc que la rentabilité du portefeuille est principalement expliquée par son exposition aux facteurs de risque étudiés et qu'aucune surperformance anormale significative n'est démontrée.
+
+% =====================================================
+\section{Références et reproduction}
+
+\subsection*{Références bibliographiques}
+
+\begin{itemize}
+    \item Fama, E. F. et French, K. R. (1993). Common risk factors in the returns on stocks and bonds. \textit{Journal of Financial Economics}, 33(1), 3--56.
+    \item Newey, W. K. et West, K. D. (1987). A simple, positive semi-definite, heteroskedasticity and autocorrelation consistent covariance matrix. \textit{Econometrica}, 55(3), 703--708.
+    \item Seabold, S. et Perktold, J. (2010). Statsmodels: Econometric and statistical modeling with Python. \textit{Proceedings of the 9th Python in Science Conference}.
+    \item Kenneth R. French Data Library : \url{https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/}
+    \item Yahoo Finance : \url{https://finance.yahoo.com/}
+\end{itemize}
+
+\subsection*{Reproduction des résultats}
+
+Pour reproduire cette étude, il faut :
+\begin{enumerate}
+    \item disposer de Python ou de Google Colab ;
+    \item installer les bibliothèques \texttt{numpy}, \texttt{pandas}, \texttt{matplotlib}, \texttt{seaborn}, \texttt{statsmodels}, \texttt{requests} et \texttt{yfinance} ;
+    \item télécharger le fichier mensuel des facteurs Fama-French ;
+    \item vérifier le chemin d'accès au fichier CSV dans le notebook ;
+    \item exécuter toutes les cellules dans l'ordre ;
+    \item vérifier les tableaux, les graphiques et les résultats statistiques.
+\end{enumerate}
+
+La graine aléatoire utilisée pour le bootstrap est fixée à 42 afin de faciliter la reproductibilité.
+
+\textbf{Dépôt GitHub :} \textit{ajouter le lien réel du dépôt contenant le notebook et les fichiers nécessaires à la reproduction.}
+
+\subsection*{Déclaration des ressources et outils}
+
+Les données utilisées proviennent de Kenneth R. French Data Library et de Yahoo Finance. Le traitement et l'analyse ont été réalisés avec Python et ses bibliothèques statistiques et graphiques. Toute assistance par intelligence artificielle utilisée pour la rédaction ou la structuration doit être déclarée conformément aux consignes de l'établissement.
+
+\end{document}
