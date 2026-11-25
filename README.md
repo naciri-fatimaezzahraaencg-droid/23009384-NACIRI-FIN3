@@ -1,2 +1,2 @@
  Le lien de la vidéo est le suivant :
- "C:\Users\hp\Downloads\F5_Facteurs_de_risque_portefeuille.mp4"
+https://github.com/user-attachments/assets/6d8b8493-b6c3-49a0-8f0f-75c8c2b94885
