@@ -1,1 +1,34 @@
+# ================= Python =================
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
 
+# ================= Jupyter =================
+.ipynb_checkpoints/
+
+# ================= Artefacts de compilation LaTeX =================
+# Le PDF final est committé ; les fichiers intermédiaires ne doivent pas l'être
+presentation/*.aux
+presentation/*.bbl
+presentation/*.blg
+presentation/*.fls
+presentation/*.fdb_latexmk
+presentation/*.log
+presentation/*.out
+presentation/*.nav
+presentation/*.snm
+presentation/*.toc
+presentation/*.synctex.gz
+presentation/Presentation_F5_3.pdf
+
+# ===== Sorties régénérables par les scripts =====
+presentation/Presentation_NACIRI_F5_3.pdf
+latex_log_tail.txt
+
+# ================= Système et éditeurs =================
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
